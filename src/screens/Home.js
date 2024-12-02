@@ -50,7 +50,7 @@ function HomeScreen() {
             const renterId = user.renterId;
             console.log("Fetching recent trips for renterId:", renterId); // Debugging log
     
-            const response = axios.get(`http://192.168.2.157:5028/api/Home/recent-trips/${renterId}`)
+            const response = axios.get(`http://192.168.2.133:5028/api/Home/recent-trips/${renterId}`)
                 .then(response => {
                     setRecentTrips(response.data);
                     console.log('Response:', response.data);

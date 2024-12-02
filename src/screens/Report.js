@@ -82,7 +82,7 @@ function ReportScreen({ navigation }) {
         };
     
         try {
-            const response = await axios.post(`http://127.0.0.1:5028/api/Report/addReport`, report);
+            const response = await axios.post(`http://192.168.2.133:5028/api/Report/addReport`, report);
             console.log(response.data);
             alert('Report submitted successfully');
             setNatureOfIssue(null);

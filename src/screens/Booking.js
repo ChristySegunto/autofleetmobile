@@ -17,7 +17,7 @@ function BookingScreen({ navigation }) {
             const renterId = user.renterId;
             console.log("Fetching booking status for renterId:", renterId); // Debugging log
             
-            axios.get(`http://192.168.2.157:5028/api/Booking/rental-status/${renterId}?status=${selectedStatus}`)
+            axios.get(`http://192.168.2.133:5028/api/Booking/rental-status/${renterId}?status=${selectedStatus}`)
                 .then(response => {
                     setRentals(response.data);
                     console.log('Response:', response.data);
