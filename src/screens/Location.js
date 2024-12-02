@@ -15,176 +15,99 @@ const LocationScreen = ({ route }) => {
     const [carUpdateId, setCarUpdateId] = useState(null);
     const [permissionGranted, setPermissionGranted] = useState(false);
     const [isTripStarted, setIsTripStarted] = useState(false);
-    
-
     const rental = route.params?.rental;
 
-    useEffect(() => {
-        console.log("Updated location state:", location);
-    }, [location]);
+    const requestLocationPermission = async () => {
+        const result = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
+        return result === RESULTS.GRANTED;
+    };
 
     const handleTripToggle = async () => {
-        console.log("Button pressed, checking trip state...");
-        if (isTripStarted) {
-            // End the trip
-            await handleEndTrip();
+        if (!isTripStarted) {
+            const permission = await requestLocationPermission();
+            if (permission) {
+                startTracking();
+            } else {
+                Alert.alert('Permission Denied', 'Location permission is required to start the trip.');
+            }
         } else {
-            // Start the trip
-            await handleStartTrip();
+            stopTracking();
         }
     };
 
+    const startTracking = () => {
+        const id = Geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude, speed } = position.coords;
+                setLocation({ latitude, longitude, speed });
+                sendLocationToDatabase(latitude, longitude, speed);
+            },
+            (error) => {
+                console.error(error);
+            },
+            { enableHighAccuracy: true, distanceFilter: 10, interval: 1000, fastestInterval: 1000 }
+        );
+        setWatchId(id);
+        setIsTripStarted(true);
+    };
 
-    const handleStartTrip = async () => {
-        const carUpdateData = {
+    const stopTracking = () => {
+        if (watchId !== null) {
+            Geolocation.clearWatch(watchId);
+            setWatchId(null);
+            setLocation(null);
+        }
+        setIsTripStarted(false);
+        sendStopTripUpdate();
+    };
+
+    const sendLocationToDatabase = (latitude, longitude, speed) => {
+        axios.post('http://192.168.2.133:5028/api/Location/start-trip', {
             renter_id: user.renterId,
             renter_fname: user.renterFname,
             renter_lname: user.renterLname,
-            location_latitude: 0,  // Placeholder value
-            location_longitude: 0, // Placeholder value
-            speed: 0,  // Initial speed
-            total_fuel_consumption: 0,
-            total_distance_travelled: 0,
+            location_latitude: latitude,
+            location_longitude: longitude,
+            speed: speed || 0,
+            total_fuel_consumption: 0, // Implement logic for fuel calculation
+            total_distance_travelled: 0, // Implement distance calculation
             last_update: new Date().toISOString(),
             vehicle_id: rental.vehicleId,
             carupdate_status: "Ongoing",
-        };
-        
-        console.log("Sending start-trip data:", carUpdateData);
-
-        try {
-            const response = await axios.post('http://192.168.2.157:5028/api/Location/start-trip', carUpdateData, {
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-    
-            // Save the carupdate_id in state to use for future updates
-            console.log("Start-trip response:", response.data);
-            const carupdateId = response.data.carUpdate.carupdate_id;
-            setCarUpdateId(carupdateId); // Set the car update ID from the API response
-            setWatchId(response.data.carUpdate.carupdate_id); // Set the watchId
-            setIsTripStarted(true);
-            console.log("Trip started with carupdate_id:", carupdateId);
-    
-            Alert.alert('Trip started successfully!');
-        } catch (error) {
-            console.error("Error starting trip:", error);
-            Alert.alert('Error', 'Unable to start trip');
-        }
-    };
-
-    const handleEndTrip = async () => {
-        if (!carUpdateId) {
-            Alert.alert("Error", "No trip is currently in progress.");
-            return;
-        }
-    
-        try {
-            const response = await axios.put(`http://192.168.2.157:5028/api/Location/end-trip/${carUpdateId}`);
-            setIsTripStarted(false);
-            setCarUpdateId(null); // Set carUpdateId to null
-    
-            // Stop location updates when the trip ends
-            if (watchId) {
-                Geolocation.clearWatch(watchId);  // Stop the location updates
-                setWatchId(null);  // Clear watchId state
-            }
-
-            Alert.alert('Trip ended successfully!', 'Your trip status is now completed.');
-
-        } catch (error) {
-            console.error("Error ending trip:", error);
-            Alert.alert('Error', 'Unable to end trip');
-        }
+            rented_vehicle_id: rental.rentedVehicleId,
+        })
+        .then(response => console.log('Location updated:', response.data))
+        .catch(error => console.error('Error updating location:', error));
     };
     
 
-    const updateTripLocation = async (coords) => {
-        if (!carUpdateId) {
-            console.log("No active trip, skipping location update.");
-            return; // Do not send updates if carUpdateId is null
-        } // Don't update if carUpdateId is not set
-    
-        const carUpdate = {
-            location_latitude: coords.latitude,
-            location_longitude: coords.longitude,
-            speed: coords.speed || 0,
-            total_fuel_consumption: 0,  // Set actual fuel consumption if available
-            total_distance_travelled: 0,  // Set actual distance if available
-            last_update: new Date().toISOString(),
-            carupdate_status: "Ongoing", // Add the missing field
-            renter_fname: user.renterFname, // Add the missing field
-            renter_lname: user.renterLname, // Add the missing field
-        }
-    
-        try {
-            const response = await axios.put(
-                `http://192.168.2.157:5028/api/Location/update-trip/${carUpdateId}`, carUpdate,
-                { 
-                    headers: { 'Content-Type': 'application/json' } 
-                });
-            console.log("Location update response:", response.data);
-        } catch (error) {
-            console.error("Real-time location update error:", error);
-        }
+    const sendStopTripUpdate = () => {
+        axios.put(`http://192.168.2.133:5028/api/Location/end-trip/${rental.rentedVehicleId}`)
+        .then(response => console.log('Trip stopped:', response.data))
+        .catch(error => console.error('Error stopping trip:', error));
     };
 
-    useEffect(() => {
-        const requestPermission = async () => {
-            const permission = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
-            console.log("Permission result:", permission);
 
-            if (permission === RESULTS.GRANTED) {
-                setPermissionGranted(true);
-            } else {
-                Alert.alert("Permission denied", "Location permission is required to track the trip.");
-            }
-        };
-
-        requestPermission();
-    }, []);
-    
-
-    
-    useEffect(() => {
-        // Only start watching location when the trip has started
-        if (permissionGranted && isTripStarted && carUpdateId) {
-            const id = Geolocation.watchPosition(
-                (position) => {
-                    console.log("Position updated:", position.coords);
-                    setLocation(position.coords);
-                    updateTripLocation(position.coords);
-                },
-                (error) => console.error("Location error:", error),
-                { 
-                    enableHighAccuracy: true, 
-                    distanceFilter: 1, 
-                    interval: 1000,     
-                    fastestInterval: 1000 
-                }
-            );
-    
-            setWatchId(id);
-            console.log("Location watch started with ID: ", id);
-        }
-    
-        // Clean up function to clear watch when the trip ends or the component unmounts
-        return () => {
-            if (watchId) {
-                Geolocation.clearWatch(watchId);
-                setWatchId(null);
-                setLocation(null);
-                console.log("Location watch cleared.");
-            }
-        };
-    }, [permissionGranted, isTripStarted, carUpdateId]);   // Dependency array updated to react to trip start and carUpdateId changes
-    
-
-    
 
     const goBack = () => {
-        navigation.goBack();
+        // Stop tracking if still active
+        if (isTripStarted) {
+            Alert.alert(
+                'Trip in Progress', 
+                'Do you want to end the current trip?',
+                [
+                    { text: 'Continue Trip', style: 'cancel' },
+                    { 
+                        text: 'End Trip', 
+                        onPress: () => {
+                            navigation.goBack();
+                        }
+                    }
+                ]
+            );
+        } else {
+            navigation.goBack();
+        }
     };
 
 
