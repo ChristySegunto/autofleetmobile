@@ -22,6 +22,7 @@ const LocationScreen = ({ route }) => {
         return result === RESULTS.GRANTED;
     };
 
+
     const handleTripToggle = async () => {
         if (!isTripStarted) {
             const permission = await requestLocationPermission();
@@ -39,14 +40,17 @@ const LocationScreen = ({ route }) => {
         const id = Geolocation.watchPosition(
             (position) => {
                 const { latitude, longitude, speed } = position.coords;
+                console.log('Location updated:', latitude, longitude, speed); // Check if this fires more than once
                 setLocation({ latitude, longitude, speed });
                 sendLocationToDatabase(latitude, longitude, speed);
             },
             (error) => {
                 console.error(error);
             },
-            { enableHighAccuracy: true, distanceFilter: 10, interval: 1000, fastestInterval: 1000 }
+            { enableHighAccuracy: true, distanceFilter: 0, interval: 1000, fastestInterval: 1000 }
         );
+        console.log("Watch ID: ", watchId);
+
         setWatchId(id);
         setIsTripStarted(true);
     };
@@ -62,7 +66,7 @@ const LocationScreen = ({ route }) => {
     };
 
     const sendLocationToDatabase = (latitude, longitude, speed) => {
-        axios.post('http://192.168.2.133:5028/api/Location/start-trip', {
+        axios.post('http://localhost:5028/api/Location/start-trip', {
             renter_id: user.renterId,
             renter_fname: user.renterFname,
             renter_lname: user.renterLname,
@@ -82,7 +86,7 @@ const LocationScreen = ({ route }) => {
     
 
     const sendStopTripUpdate = () => {
-        axios.put(`http://192.168.2.133:5028/api/Location/end-trip/${rental.rentedVehicleId}`)
+        axios.put(`http://localhost:5028/api/Location/end-trip/${rental.rentedVehicleId}`)
         .then(response => console.log('Trip stopped:', response.data))
         .catch(error => console.error('Error stopping trip:', error));
     };
@@ -109,6 +113,7 @@ const LocationScreen = ({ route }) => {
             navigation.goBack();
         }
     };
+
 
 
     return (
