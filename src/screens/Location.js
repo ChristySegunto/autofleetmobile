@@ -60,6 +60,7 @@ const LocationScreen = ({ route }) => {
             Geolocation.clearWatch(watchId);
             setWatchId(null);
             setLocation(null);
+            alert("Trip Stopped Successfully")
         }
         setIsTripStarted(false);
         sendStopTripUpdate();
