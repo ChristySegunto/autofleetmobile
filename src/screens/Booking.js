@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { useNavigation, useRoute } from '@react-navigation/native'; 
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'; 
 import { useAuth } from '../context/AuthContext';
 import logo from './../img/logo.png';
 import axios from 'axios';
@@ -12,22 +12,22 @@ function BookingScreen({ navigation }) {
     const [selectedStatus, setSelectedStatus] = useState('Upcoming');
     const [rentals, setRentals] = useState([]);
 
-    useEffect(() => {
-        if (user && user.renterId) {
-            const renterId = user.renterId;
-            console.log("Fetching booking status for renterId:", renterId); // Debugging log
-            
-            axios.get(`http://192.168.2.133:5028/api/Booking/rental-status/${renterId}?status=${selectedStatus}`)
-                .then(response => {
-                    setRentals(response.data);
-                    console.log('Response:', response.data);
-                })
-                .catch(error => {
-                    console.error('Error fetching rentals:', error.response ? error.response.data : error.message);
-                    Alert.alert('Error', 'Failed to fetch rentals');
-                });
-        }
-    }, [user, selectedStatus]);
+    useFocusEffect(
+        useCallback(() => {
+            if (user && user.renterId) {
+                const renterId = user.renterId;
+                axios.get(`http://localhost:5028/api/Booking/rental-status/${renterId}?status=${selectedStatus}`)
+                    .then(response => {
+                        setRentals(response.data);
+                        console.log('Response:', response.data);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching rentals:', error.response ? error.response.data : error.message);
+                    });
+            }
+        }, [user, selectedStatus])
+    );
+
 
     const convertTo12HourFormat = (timeString) => {
         if (!timeString) return 'Invalid Time'; // Fallback if timeString is empty
