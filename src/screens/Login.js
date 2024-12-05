@@ -12,7 +12,7 @@ function LoginScreen({ navigation }) {
 
     const handleLogin = async () => {
         try {
-            const response = await axios.post('http://192.168.2.133:5028/api/Login/login', 
+            const response = await axios.post('http://localhost:5028/api/Login/login', 
                 {
                     email: email, // Ensure these fields are lowercase
                     password: password,
