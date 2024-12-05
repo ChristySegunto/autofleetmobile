@@ -1,34 +1,37 @@
+// Booking Screen
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'; 
-import { useAuth } from '../context/AuthContext';
-import logo from './../img/logo.png';
-import axios from 'axios';
+import { useAuth } from '../context/AuthContext'; // Importing authentication context to manage user data
+import logo from './../img/logo.png'; // Importing logo for the app
+import axios from 'axios'; // Importing axios for making API calls
 
+// BookingScreen component where users can view and manage their bookings
 function BookingScreen({ navigation }) {
-    const { user, logout } = useAuth();
-    const route = useRoute();
-    const [selectedStatus, setSelectedStatus] = useState('Upcoming');
-    const [rentals, setRentals] = useState([]);
+    const { user, logout } = useAuth(); // calling user data and logout function from the AuthContext
+    const route = useRoute(); // To get information about the current route
+    const [selectedStatus, setSelectedStatus] = useState('Upcoming'); // Default status is 'Upcoming'
+    const [rentals, setRentals] = useState([]); // State to hold the rental data
 
+    // useFocusEffect ensures data is refreshed when the screen is focused
     useFocusEffect(
         useCallback(() => {
             if (user && user.renterId) {
                 const renterId = user.renterId;
                 axios.get(`http://localhost:5028/api/Booking/rental-status/${renterId}?status=${selectedStatus}`)
                     .then(response => {
-                        setRentals(response.data);
-                        console.log('Response:', response.data);
+                        setRentals(response.data); // Set rentals state to response data
+                        console.log('Response:', response.data); // Log the response data for debugging
                     })
                     .catch(error => {
-                        console.error('Error fetching rentals:', error.response ? error.response.data : error.message);
+                        console.error('Error fetching rentals:', error.response ? error.response.data : error.message); // Handle errors in API call
                     });
             }
         }, [user, selectedStatus])
     );
 
-
+    // Function to convert 24-hour time format to 12-hour format
     const convertTo12HourFormat = (timeString) => {
         if (!timeString) return 'Invalid Time'; // Fallback if timeString is empty
     
@@ -37,14 +40,15 @@ function BookingScreen({ navigation }) {
     
         let hours = parseInt(timeParts[0], 10);
         let minutes = timeParts[1];
-        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const ampm = hours >= 12 ? 'PM' : 'AM'; // Determine AM/PM based on the hour
         
         // Adjust hours to 12-hour format
         hours = hours % 12;
         if (hours === 0) hours = 12; // If the hour is 0 (midnight), show 12
-        return `${hours}:${minutes} ${ampm}`;
+        return `${hours}:${minutes} ${ampm}`; // Return formatted time
     };
     
+    // Function to format date string (e.g., MM/DD/YYYY)
     const formatDate = (dateString) => {
         if (!dateString) return 'Invalid Date'; // Fallback if dateString is empty or invalid
     
@@ -55,20 +59,20 @@ function BookingScreen({ navigation }) {
         return date.toLocaleDateString(); 
     };
 
+    // Function that gets called when a rental item is clicked
     const handleRentalClick = (rental) => {
-        navigation.navigate('Location', { rental }); 
+        navigation.navigate('Location', { rental });  // Navigate to the 'Location' screen, passing the rental object
     };
 
-    
-
-
+    // Function to handle changing of rental status (Upcoming, Completed, Canceled)
     const handleStatusChange = (status) => {
-        setSelectedStatus(status);
+        setSelectedStatus(status); // Update the selected status
     };
 
+    // Function to handle logout
     const handleLogout = () => {
         logout(); // Clear user data
-        alert("Logout Successful.")
+        alert("Logout Successful.") // Alert message on successful logout
         navigation.navigate('Login'); // Navigate to login screen
     };
 
@@ -87,6 +91,7 @@ function BookingScreen({ navigation }) {
                 </View>
 
 
+                {/* Status buttons to filter the rentals */}
                 <View style={styles.bookingStatus}>
                     <TouchableOpacity style={[styles.statusButton, selectedStatus === 'Upcoming' && styles.selectedButton]} onPress={() => handleStatusChange('Upcoming')}>
                         <Text style={[styles.statusText, selectedStatus === 'Upcoming' && styles.selectedButtonText]}>Upcoming</Text>
@@ -99,6 +104,7 @@ function BookingScreen({ navigation }) {
                     </TouchableOpacity>
                 </View>
 
+                {/* Display rentals based on selected status */}
                 <ScrollView contentContainerStyle={styles.statusContainer}>
                     {rentals.length === 0 ? (
                         <Text style={styles.noRentalsText}>No rentals found for this status.</Text>
@@ -132,7 +138,7 @@ function BookingScreen({ navigation }) {
             </View>
             
 
-
+            {/* Bottom navigation bar with icons */}
             <View style={styles.bottomNavContainer}>
                 <TouchableOpacity style={styles.navButton} onPress={() => navigation.navigate('Home')}>
                     <Icon style={[styles.navButtonText, route.name === 'Home' && { color: '#094985' }]} name="home" size={25} color="#FFF" />
@@ -155,6 +161,7 @@ function BookingScreen({ navigation }) {
     );
 }
 
+// StyleSheet for the component
 const styles = StyleSheet.create({
     container: {
         flex: 1,

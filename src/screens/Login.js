@@ -1,3 +1,4 @@
+//Login Screen
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import axios from 'axios';
@@ -6,17 +7,19 @@ import { useAuth } from '../context/AuthContext';
 import logo from './../img/logo.png';
 
 function LoginScreen({ navigation }) {
-    const { login } = useAuth();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const { login } = useAuth(); // Get login function from AuthContext to store user data on successful login
+    const [email, setEmail] = useState(''); // State to store the email input
+    const [password, setPassword] = useState(''); // State to store the password input
 
+    // Function to handle login when user presses the login button
     const handleLogin = async () => {
         try {
+            // Send login credentials to the backend API for validation
             const response = await axios.post('http://localhost:5028/api/Login/login', 
                 {
                     email: email, // Ensure these fields are lowercase
                     password: password,
-                    role: 'renter'
+                    role: 'renter' // Specify user role as renter
                 }, 
                 {
                     headers: {
@@ -24,23 +27,26 @@ function LoginScreen({ navigation }) {
                     }
                 });
             
-            console.log('Response:', response.data);
+            console.log('Response:', response.data); // Log the server response
             
-            if (response.status === 200) {
+            if (response.status === 200) { // If login is successful
+
+                // Declare user data from the response
                 const { email, role, userId, renterId, renterFname, renterLname, rentedVehicleCount, upcomingRentCount } = response.data;
                 
-                if (role === 'renter') {
-                    login({ email, role, userId, renterId, renterFname, renterLname, rentedVehicleCount, upcomingRentCount});
-                    alert('Login successful');
-                    navigation.navigate('Home');
+                if (role === 'renter') { // Ensure the user has the correct role
+                    login({ email, role, userId, renterId, renterFname, renterLname, rentedVehicleCount, upcomingRentCount}); // Store user data in context
+                    alert('Login successful'); // Display success message
+                    navigation.navigate('Home'); // Navigate to the Home screen
                 } else {
-                    alert('You do not have access to this application.');
+                    alert('You do not have access to this application.'); // Alert if user role is not 'renter'
                 }
             }
         } catch (error) {
+            // Error handling for different cases
             if (error.response) {
                 console.error('Response Error:', error.response.data);
-                if (error.response.status === 401) {
+                if (error.response.status === 401) { // Unauthorized error
                     const errorMessage = error.response.data?.Message || "Invalid credentials. Please try again.";  // Safe fallback
                     alert(errorMessage);
                 } else {
@@ -48,10 +54,10 @@ function LoginScreen({ navigation }) {
                     alert(`Error: ${error.response.data?.Message || error.response.statusText}`);
                 }
             } else if (error.request) {
-                console.error('No Response:', error.request);
+                console.error('No Response:', error.request); // If no response from server
                 alert('Error: No response from server. Check your network or server configuration.');
             } else {
-                console.error('Axios Error:', error.message);
+                console.error('Axios Error:', error.message); // General axios error
                 alert(`Error: ${error.message}`);
             }
         }
@@ -64,31 +70,34 @@ function LoginScreen({ navigation }) {
                 <Image 
                     source={logo} 
                     style={styles.logo} 
-                    resizeMode="contain"
+                    resizeMode="contain" // Make the logo fit within the container
                 />
-                <Text style={styles.logoText}>AutoFleet</Text>
-                <Text style={styles.logoText2}>FLEET MANAGEMENT SYSTEM</Text>
+                <Text style={styles.logoText}>AutoFleet</Text> {/* Application Name */}
+                <Text style={styles.logoText2}>FLEET MANAGEMENT SYSTEM</Text> {/* Subtitle */}
             </View>
             
             <View style={styles.formContainer}>
-                <Text style={styles.title}>LOGIN</Text>
+                <Text style={styles.title}>LOGIN</Text> {/* Login screen title */}
                 <View style={styles.inputContainer}>
+                    {/* Email input field */}
                     <TextInput
                         style={styles.input}
                         placeholder="Email"
                         value={email}
-                        onChangeText={setEmail}
+                        onChangeText={setEmail} // Update email state on text change
                     />
+                    {/* Password input field */}
                     <TextInput
                         style={styles.input}
                         placeholder="Password"
                         value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
+                        onChangeText={setPassword} // Update password state on text change
+                        secureTextEntry // Hide password input
                     />
                 </View>
                 
                 <View style={styles.submitButtonContainer}>
+                    {/* Login button */}
                     <TouchableOpacity style={styles.submitButton} onPress={handleLogin}>
                         <Text style={styles.submitButtonText}>Login</Text>
                     </TouchableOpacity>
@@ -99,6 +108,7 @@ function LoginScreen({ navigation }) {
     );
 }
 
+// Styling for the Login screen components
 const styles = StyleSheet.create({
     container: {
         flex: 1,

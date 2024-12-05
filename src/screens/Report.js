@@ -1,31 +1,35 @@
+//Report Screen
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Image, TouchableOpacity, Switch, Modal, ScrollView } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker'; // For dropdown list selection
+import DateTimePicker from '@react-native-community/datetimepicker'; // Date and time picker
 
-import Icon from 'react-native-vector-icons/FontAwesome';
-import { useNavigation, useRoute } from '@react-navigation/native'; 
-import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import Icon from 'react-native-vector-icons/FontAwesome'; // FontAwesome icons for navigation
+import { useNavigation, useRoute } from '@react-navigation/native'; // Navigation hooks
+import { useAuth } from '../context/AuthContext'; // Custom Auth context for user data
+import axios from 'axios'; // Axios for making HTTP requests
 
-import logo2 from './../img/logo2.png';
+import logo2 from './../img/logo2.png'; // Logo for the screen
 
 function ReportScreen({ navigation }) {
-    const { user, logout } = useAuth();
-    const route = useRoute();
-    const [isEmergency, setIsEmergency] = useState(false); 
-    const [natureOfIssue, setNatureOfIssue] = useState("");
+    const { user, logout } = useAuth(); // Access the user data and logout function from context
+    const route = useRoute(); // Get the current route information
+    const [isEmergency, setIsEmergency] = useState(false); // State for the emergency switch
+    const [natureOfIssue, setNatureOfIssue] = useState(""); // State for selecting the nature of the issue
 
+    // States for date, time, modal visibility, and note
     const [date, setDate] = useState(new Date());
     const [time, setTime] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [note, setNote] = useState(""); // Added note state
 
+    // Handle change for the emergency switch
     const handleSwitchChange = (value) => {
-        setIsEmergency(value);
+        setIsEmergency(value); // Update the state based on the switch toggle
     };
 
+    // Handle date selection from the DateTimePicker
     const onChangeDate = (event, selectedDate) => {
         if (event.type === "dismissed") {
             // Handle dismissal without selection
@@ -34,21 +38,23 @@ function ReportScreen({ navigation }) {
             return;
         }
     
-        setDate(selectedDate); // Update the date only if valid
-        setShowDatePicker(false);
+        setDate(selectedDate); // Set the date if a valid date is selected
+        setShowDatePicker(false); // Close the date picker after selection
     };
 
+    // Handle time selection from the DateTimePicker
     const onChangeTime = (event, selectedTime) => {
         if (event.type === "dismissed") {
-            setShowTimePicker(false);
-            setShowDatePicker(false);
+            setShowTimePicker(false);  // Close the time picker if dismissed
+            setShowDatePicker(false);  // Close the date picker if dismissed
             return;
         }
         
-        setTime(selectedTime); // Update the time only if valid
-        setShowTimePicker(false);
+        setTime(selectedTime); // Set the time if a valid time is selected
+        setShowTimePicker(false); // Close the time picker after selection
     };
 
+    // Handle form submission and data validation
     const handleSubmit = async () => {
         if (!natureOfIssue) {
             alert('Please select the nature of the issue.');
@@ -60,7 +66,7 @@ function ReportScreen({ navigation }) {
             return;
         }
     
-        const renterId = user?.renterId;
+        const renterId = user?.renterId; // Get renter ID from user context
     
         console.log('natureOfIssue:', natureOfIssue);
         console.log('renterId:', renterId);
@@ -72,6 +78,7 @@ function ReportScreen({ navigation }) {
             emergency: isEmergency.toString(),
         });
     
+        // Prepare report data for submission
         const report = {
             renter_id: renterId,
             nature_of_issue: natureOfIssue,
@@ -83,24 +90,24 @@ function ReportScreen({ navigation }) {
     
         try {
             const response = await axios.post(`http://localhost:5028/api/Report/addReport`, report);
-            console.log(response.data);
-            alert('Report submitted successfully');
-            setNatureOfIssue(null);
+            console.log(response.data); // Log server response
+            alert('Report submitted successfully'); // Notify user on success
+            setNatureOfIssue(null); // Reset form fields
             setNote(null);
             setIsEmergency(null);
         } catch (error) {
-            console.error("Error submitting report:", error.response?.data || error.message);
+            console.error("Error submitting report:", error.response?.data || error.message); // Handle submission error
             alert("Failed to submit the report. Please try again later.");
         }
     };
     
     
     
-
+    // Handle logout action
     const handleLogout = () => {
         logout(); // Clear user data
         alert("Logout Successful.")
-        navigation.navigate('Login'); // Navigate to login screen
+        navigation.navigate('Login'); // Navigate to login screen after logout
     };
     
     return (
@@ -118,6 +125,7 @@ function ReportScreen({ navigation }) {
                 </View>
 
                 <View style={styles.reportFormContainer}>
+                    {/* Nature of Issue Dropdown */}
                     <View style={styles.inputContainer}>
                         <Text style={styles.inputText} >Nature of Issue</Text>
                         <View style={styles.dropdownContainer}>
@@ -135,11 +143,13 @@ function ReportScreen({ navigation }) {
                             </Picker>
                         </View>
 
+                        {/* Date Picker */}
                         <Text style={styles.inputText} >Date & Time</Text>
                         <TouchableOpacity style={styles.dateInput} onPress={() => setShowDatePicker(true)}>
                             <Text style={styles.dateText}>{date.toLocaleDateString()}</Text>
                         </TouchableOpacity>
 
+                        {/* Date picker modal */}
                         {showDatePicker && (
                             <Modal
                                 animationType="slide"
@@ -161,10 +171,12 @@ function ReportScreen({ navigation }) {
                             </Modal>
                         )}
 
+                        {/* Time Picker */}
                         <TouchableOpacity style={styles.dateInput} onPress={() => setShowTimePicker(true)}>
                             <Text style={styles.dateText}>{time.toLocaleTimeString()}</Text>
                         </TouchableOpacity>
 
+                        {/* Time picker modal */}
                         {showTimePicker && (
                             <Modal
                                 animationType="slide"
@@ -186,7 +198,7 @@ function ReportScreen({ navigation }) {
                             </Modal>
                         )}
 
-                        
+                        {/* Note input */}
                         <Text style={styles.inputText} >Note</Text>
                         <TextInput
                             style={styles.input}
@@ -195,6 +207,7 @@ function ReportScreen({ navigation }) {
                             onChangeText={(text) => setNote(text)}
                         />
 
+                        {/* Emergency switch */}
                         <View style={styles.emergencyButton}>
                             <Text style={styles.inputText} >EMEGENCY: </Text>
                             <Switch
@@ -206,6 +219,7 @@ function ReportScreen({ navigation }) {
                             />
                         </View>
 
+                        {/* Submit button */}
                         <View style={styles.submitButtonContainer}>
                         <TouchableOpacity style={styles.submitButton} onPress={() => {
                             console.log('Submit button pressed'); // Add this for debugging
@@ -220,7 +234,7 @@ function ReportScreen({ navigation }) {
             </ScrollView>
             
                 
-
+            {/* Bottom Navigation Bar */}
             <View style={styles.bottomNavContainer}>
                 <TouchableOpacity style={styles.navButton} onPress={() => navigation.navigate('Home')}>
                     <Icon style={[styles.navButtonText, route.name === 'Home' && { color: '#094985' }]} name="home" size={25} color="#FFF" />
@@ -243,6 +257,7 @@ function ReportScreen({ navigation }) {
     );
 }
 
+// StyleSheet for the component
 const styles = StyleSheet.create({
     container: {
         flex: 1,
